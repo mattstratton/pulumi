@@ -116,6 +116,7 @@ func TestGeneratePackage(t *testing.T) {
 				filepath.Join("example", "doc.go"),
 				filepath.Join("example", "init.go"),
 				filepath.Join("example", "component.go"),
+				filepath.Join("example", "doFoo.go"),
 				filepath.Join("example", "provider.go"),
 				filepath.Join("example", "pulumiTypes.go"),
 				filepath.Join("example", "pulumiUtilities.go"),

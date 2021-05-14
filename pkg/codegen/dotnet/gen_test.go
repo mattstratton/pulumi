@@ -52,6 +52,7 @@ func TestGeneratePackage(t *testing.T) {
 			[]string{
 				"Inputs/FooArgs.cs",
 				"Component.cs",
+				"DoFoo.cs",
 			},
 		},
 	}

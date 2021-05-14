@@ -60,6 +60,7 @@ func TestGeneratePackage(t *testing.T) {
 			"simple-plain-schema",
 			[]string{
 				"component.ts",
+				"doFoo.ts",
 				"types/input.ts",
 				"types/output.ts",
 				"types/index.ts",

@@ -74,13 +74,13 @@ namespace Pulumi.Example
         public bool? B { get; set; }
 
         [Input("bar")]
-        public Inputs.Foo? Bar { get; set; }
+        public Inputs.FooArgs? Bar { get; set; }
 
         [Input("baz")]
-        private ImmutableArray<Inputs.Foo>? _baz;
-        public ImmutableArray<Inputs.Foo> Baz
+        private ImmutableArray<Inputs.FooArgs>? _baz;
+        public ImmutableArray<Inputs.FooArgs> Baz
         {
-            get => _baz ?? (_baz = new ImmutableArray<Inputs.Foo>());
+            get => _baz ?? (_baz = new ImmutableArray<Inputs.FooArgs>());
             set => _baz = value;
         }
 

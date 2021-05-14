@@ -423,11 +423,11 @@ type plainType struct {
 }
 
 func (pt *plainType) genInputProperty(w io.Writer, prop *schema.Property, indent string) {
-	argsType := pt.args && !prop.IsPlain
+	wrapInput := pt.args && !prop.IsPlain
 
 	wireName := prop.Name
 	propertyName := pt.mod.propertyName(prop)
-	propertyType := pt.mod.typeString(prop.Type, pt.propertyTypeQualifier, true, pt.state, argsType, argsType, false, !prop.IsRequired)
+	propertyType := pt.mod.typeString(prop.Type, pt.propertyTypeQualifier, true, pt.state, wrapInput, pt.args, false, !prop.IsRequired)
 
 	// First generate the input attribute.
 	attributeArgs := ""
@@ -454,7 +454,7 @@ func (pt *plainType) genInputProperty(w io.Writer, prop *schema.Property, indent
 	case *schema.ArrayType, *schema.MapType:
 		backingFieldName := "_" + prop.Name
 		requireInitializers := !pt.args
-		backingFieldType := pt.mod.typeString(prop.Type, pt.propertyTypeQualifier, true, pt.state, argsType, argsType, requireInitializers, false)
+		backingFieldType := pt.mod.typeString(prop.Type, pt.propertyTypeQualifier, true, pt.state, wrapInput, pt.args, requireInitializers, false)
 
 		fmt.Fprintf(w, "%s[Input(\"%s\"%s)]\n", indent, wireName, attributeArgs)
 		fmt.Fprintf(w, "%sprivate %s? %s;\n", indent, backingFieldType, backingFieldName)
@@ -1826,9 +1826,7 @@ func generateModuleContextMap(tool string, pkg *schema.Package) (map[string]*mod
 				getModFromToken(t.Token, t.Package).details(t).outputType = true
 			}
 			getModFromToken(t.Token, t.Package).details(t).inputType = true
-			if plain {
-				getModFromToken(t.Token, t.Package).details(t).plainType = true
-			} else {
+			if !plain {
 				getModFromToken(t.Token, t.Package).details(t).argsType = true
 			}
 		})

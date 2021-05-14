@@ -89,6 +89,7 @@ func TestGeneratePackage(t *testing.T) {
 			[]string{
 				filepath.Join("pulumi_example", "_inputs.py"),
 				filepath.Join("pulumi_example", "component.py"),
+				filepath.Join("pulumi_example", "do_foo.py"),
 				filepath.Join("pulumi_example", "outputs.py"),
 			},
 		},

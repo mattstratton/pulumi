@@ -101,6 +101,19 @@
       "type": "object"
     }
   },
+  "functions": {
+    "example::doFoo": {
+      "inputs": {
+        "properties": {
+          "foo": {
+            "$ref": "#/types/example::Foo"
+          }
+        },
+        "required": ["foo"],
+        "type": "object"
+      }
+    }
+  },
   "language": {
     "csharp": {},
     "go": {

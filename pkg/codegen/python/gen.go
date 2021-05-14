@@ -990,7 +990,7 @@ func (mod *modContext) genResource(res *schema.Resource) (string, error) {
 		// If there's an argument type, emit it.
 		for _, prop := range res.InputProperties {
 			wrapInput := !prop.IsPlain
-			ty := mod.typeString(prop.Type, true, wrapInput, wrapInput, true /*optional*/, true /*acceptMapping*/)
+			ty := mod.typeString(prop.Type, true, wrapInput, true, true /*optional*/, true /*acceptMapping*/)
 			fmt.Fprintf(w, ",\n                 %s: %s = None", InitParamName(prop.Name), ty)
 		}
 
@@ -1290,7 +1290,10 @@ func (mod *modContext) genFunction(fun *schema.Function) (string, error) {
 
 	mod.genHeader(w, true /*needsSDK*/, imports)
 
-	baseName, awaitableName := awaitableTypeNames(fun.Outputs.Token)
+	var baseName, awaitableName string
+	if fun.Outputs != nil {
+		baseName, awaitableName = awaitableTypeNames(fun.Outputs.Token)
+	}
 	name := PyName(tokenToName(fun.Token))
 
 	// Export only the symbols we want exported.
@@ -2103,7 +2106,7 @@ func (mod *modContext) genType(w io.Writer, name, comment string, properties []*
 	}
 	for _, prop := range props {
 		pname := PyName(prop.Name)
-		ty := mod.typeString(prop.Type, input, args && !prop.IsPlain, args && !prop.IsPlain, !prop.IsRequired, false /*acceptMapping*/)
+		ty := mod.typeString(prop.Type, input, args && !prop.IsPlain, args, !prop.IsRequired, false /*acceptMapping*/)
 		var defaultValue string
 		if !prop.IsRequired {
 			defaultValue = " = None"
@@ -2160,7 +2163,7 @@ func (mod *modContext) genType(w io.Writer, name, comment string, properties []*
 
 	// Generate properties. Input types have getters and setters, output types only have getters.
 	mod.genProperties(w, props, input /*setters*/, func(prop *schema.Property) string {
-		return mod.typeString(prop.Type, input, args && !prop.IsPlain, args && !prop.IsPlain, !prop.IsRequired, false /*acceptMapping*/)
+		return mod.typeString(prop.Type, input, args && !prop.IsPlain, args, !prop.IsRequired, false /*acceptMapping*/)
 	})
 
 	fmt.Fprintf(w, "\n")
@@ -2318,9 +2321,7 @@ func generateModuleContextMap(tool string, pkg *schema.Package, info PackageInfo
 					getModFromToken(T.Token, T.Package).details(T).outputType = true
 				}
 				getModFromToken(T.Token, T.Package).details(T).inputType = true
-				if plain {
-					getModFromToken(T.Token, T.Package).details(T).plainType = true
-				} else {
+				if !plain {
 					getModFromToken(T.Token, T.Package).details(T).argsType = true
 				}
 			}
