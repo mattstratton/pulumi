@@ -214,33 +214,33 @@ func resourceName(r *schema.Resource) string {
 	return tokenToName(r.Token)
 }
 
-func (pkg *pkgContext) plainType(t schema.Type, optional bool) string {
+func (pkg *pkgContext) plainTypeImpl(t schema.Type, optional bool, resolve func(t *schema.ObjectType) string, elem func(schema.Type, bool) string) string {
 	var typ string
 	switch t := t.(type) {
 	case *schema.EnumType:
-		return pkg.plainType(t.ElementType, optional)
+		return pkg.plainTypeImpl(t.ElementType, optional, resolve, elem)
 	case *schema.ArrayType:
 		typ = "[]"
 		if pkg.isExternalReference(t.ElementType) {
 			typ += "*"
 		}
-		typ += pkg.plainType(t.ElementType, false)
+		typ += elem(t.ElementType, false)
 		return typ
 	case *schema.MapType:
 		typ = "map[string]"
 		if pkg.isExternalReference(t.ElementType) {
 			typ += "*"
 		}
-		typ += pkg.plainType(t.ElementType, false)
+		typ += elem(t.ElementType, false)
 		return typ
 	case *schema.ObjectType:
-		typ = pkg.resolveObjectType(t)
+		typ = resolve(t)
 	case *schema.ResourceType:
 		typ = pkg.resolveResourceType(t)
 	case *schema.TokenType:
 		// Use the underlying type for now.
 		if t.UnderlyingType != nil {
-			return pkg.plainType(t.UnderlyingType, optional)
+			return pkg.plainTypeImpl(t.UnderlyingType, optional, resolve, elem)
 		}
 		typ = pkg.tokenToType(t.Token)
 	case *schema.UnionType:
@@ -248,7 +248,7 @@ func (pkg *pkgContext) plainType(t schema.Type, optional bool) string {
 		// type for the enum instead
 		for _, e := range t.ElementTypes {
 			if typ, ok := e.(*schema.EnumType); ok {
-				return pkg.plainType(typ.ElementType, optional)
+				return pkg.plainTypeImpl(typ.ElementType, optional, resolve, elem)
 			}
 		}
 		// TODO(pdg): union types
@@ -278,6 +278,17 @@ func (pkg *pkgContext) plainType(t schema.Type, optional bool) string {
 		return "*" + typ
 	}
 	return typ
+}
+
+func (pkg *pkgContext) plainType(t schema.Type, optional bool) string {
+	return pkg.plainTypeImpl(t, optional, pkg.resolveObjectType, pkg.plainType)
+}
+
+func (pkg *pkgContext) plainInputType(t schema.Type, optional bool) string {
+	resolve := func(t *schema.ObjectType) string {
+		return pkg.resolveObjectType(t) + "Args"
+	}
+	return pkg.plainTypeImpl(t, optional, resolve, pkg.inputType)
 }
 
 func (pkg *pkgContext) inputType(t schema.Type, optional bool) string {
@@ -806,7 +817,7 @@ func (pkg *pkgContext) genInputTypes(w io.Writer, t *schema.ObjectType, details 
 		printCommentWithDeprecationMessage(w, p.Comment, p.DeprecationMessage, true)
 		typ := pkg.inputType(p.Type, !p.IsRequired)
 		if p.IsPlain {
-			typ = pkg.plainType(p.Type, !p.IsRequired)
+			typ = pkg.plainInputType(p.Type, !p.IsRequired)
 		}
 		fmt.Fprintf(w, "\t%s %s `pulumi:\"%s\"`\n", Title(p.Name), typ, p.Name)
 	}
@@ -1253,7 +1264,7 @@ func (pkg *pkgContext) genResource(w io.Writer, r *schema.Resource, generateReso
 		printCommentWithDeprecationMessage(w, p.Comment, p.DeprecationMessage, true)
 		typ := pkg.inputType(p.Type, !p.IsRequired)
 		if p.IsPlain {
-			typ = pkg.plainType(p.Type, !p.IsRequired)
+			typ = pkg.plainInputType(p.Type, !p.IsRequired)
 		}
 		fmt.Fprintf(w, "\t%s %s\n", Title(p.Name), typ)
 	}
