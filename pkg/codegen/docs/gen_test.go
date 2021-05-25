@@ -544,6 +544,15 @@ func TestGeneratePackage(t *testing.T) {
 				"component.md",
 			},
 		},
+		{
+			"Repro for #6957",
+			"plain-schema-gh6957",
+			[]string{
+				"_index.md",
+				"provider.md",
+				"staticpage.md",
+			},
+		},
 	}
 	testDir := filepath.Join("..", "internal", "test", "testdata")
 	for _, tt := range tests {

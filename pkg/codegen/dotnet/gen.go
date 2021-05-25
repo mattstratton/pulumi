@@ -1826,9 +1826,7 @@ func generateModuleContextMap(tool string, pkg *schema.Package) (map[string]*mod
 				getModFromToken(t.Token, t.Package).details(t).outputType = true
 			}
 			getModFromToken(t.Token, t.Package).details(t).inputType = true
-			if !plain {
-				getModFromToken(t.Token, t.Package).details(t).argsType = true
-			}
+			getModFromToken(t.Token, t.Package).details(t).argsType = true
 		})
 		if r.StateInputs != nil {
 			visitObjectTypes(r.StateInputs.Properties, func(t *schema.ObjectType, _ bool) {

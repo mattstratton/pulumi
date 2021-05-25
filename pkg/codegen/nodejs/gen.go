@@ -1772,9 +1772,7 @@ func generateModuleContextMap(tool string, pkg *schema.Package, info NodePackage
 				types.details(t).outputType = true
 			}
 			types.details(t).inputType = true
-			if !plain {
-				types.details(t).argsType = true
-			}
+			types.details(t).argsType = true
 		})
 		if r.StateInputs != nil {
 			visitObjectTypes(r.StateInputs.Properties, func(t *schema.ObjectType, _ bool) {

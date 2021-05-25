@@ -2321,9 +2321,7 @@ func generateModuleContextMap(tool string, pkg *schema.Package, info PackageInfo
 					getModFromToken(T.Token, T.Package).details(T).outputType = true
 				}
 				getModFromToken(T.Token, T.Package).details(T).inputType = true
-				if !plain {
-					getModFromToken(T.Token, T.Package).details(T).argsType = true
-				}
+				getModFromToken(T.Token, T.Package).details(T).argsType = true
 			}
 		})
 		if r.StateInputs != nil {

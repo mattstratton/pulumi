@@ -55,6 +55,14 @@ func TestGeneratePackage(t *testing.T) {
 				"DoFoo.cs",
 			},
 		},
+		{
+			"Repro for #6957",
+			"plain-schema-gh6957",
+			[]string{
+				"StaticPage.cs",
+				"Inputs/FooArgs.cs",
+			},
+		},
 	}
 	testDir := filepath.Join("..", "internal", "test", "testdata")
 	for _, tt := range tests {

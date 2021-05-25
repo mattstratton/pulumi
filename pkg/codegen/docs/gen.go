@@ -1646,11 +1646,16 @@ func (mod *modContext) genIndex() indexData {
 	}
 	sortIndexEntries(functions)
 
+	version := ""
+	if mod.pkg.Version != nil {
+		version = mod.pkg.Version.String()
+	}
+
 	packageDetails := packageDetails{
 		Repository: mod.pkg.Repository,
 		License:    mod.pkg.License,
 		Notes:      mod.pkg.Attribution,
-		Version:    mod.pkg.Version.String(),
+		Version:    version,
 	}
 
 	var titleTag string

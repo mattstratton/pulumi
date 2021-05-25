@@ -66,6 +66,16 @@ func TestGeneratePackage(t *testing.T) {
 				"types/index.ts",
 			},
 		},
+		{
+			"Repro for #6957",
+			"plain-schema-gh6957",
+			[]string{
+				"staticPage.ts",
+				"types/input.ts",
+				"types/output.ts",
+				"types/index.ts",
+			},
+		},
 	}
 	testDir := filepath.Join("..", "internal", "test", "testdata")
 	for _, tt := range tests {

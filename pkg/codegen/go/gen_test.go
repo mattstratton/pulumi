@@ -136,6 +136,19 @@ func TestGeneratePackage(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"Repro for #6957",
+			"plain-schema-gh6957",
+			[]string{
+				filepath.Join("xyz", "doc.go"),
+				filepath.Join("xyz", "init.go"),
+				filepath.Join("xyz", "staticPage.go"),
+				filepath.Join("xyz", "provider.go"),
+				filepath.Join("xyz", "pulumiTypes.go"),
+				filepath.Join("xyz", "pulumiUtilities.go"),
+			},
+			false,
+		},
 	}
 	testDir := filepath.Join("..", "internal", "test", "testdata")
 	for _, tt := range tests {
