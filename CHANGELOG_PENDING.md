@@ -11,3 +11,6 @@
 
 - [auto/nodejs] - Emit warning instead of breaking on parsing JSON events for automation API.
   [#7162](https://github.com/pulumi/pulumi/pull/7162)
+
+- [codegen/python] - Rename conflicting ResourceArgs classes
+  [#7171](https://github.com/pulumi/pulumi/pull/7171)
