@@ -523,7 +523,7 @@ func (mod *modContext) genResource(w io.Writer, r *schema.Resource) error {
 		if mod.compatibility == kubernetes20 {
 			required = true
 		}
-		fmt.Fprintf(w, "    public %sreadonly %s!: pulumi.Output<%s>;\n", outcomment, prop.Name, mod.typeString(prop.Type, false, false, false, !required, prop.ConstValue))
+		fmt.Fprintf(w, "    public %sreadonly %s!: pulumi.Output<%s>;\n", outcomment, prop.Name, makeValidIdentifier(mod.typeString(prop.Type, false, false, false, !required, prop.ConstValue)))
 	}
 	fmt.Fprintf(w, "\n")
 

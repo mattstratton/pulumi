@@ -14,3 +14,6 @@
 
 - [sdk/python] Improve performance of `Output.from_input` and `Output.all` on nested objects.
   [#7175](https://github.com/pulumi/pulumi/pull/7175)
+
+- [sdk/nodejs] Support package names with `-` in schema and NodeJS codegen
+  [#7183](https://github.com/pulumi/pulumi/pull/7183)
