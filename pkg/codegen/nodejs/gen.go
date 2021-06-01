@@ -122,7 +122,7 @@ func (mod *modContext) namingContext(pkg *schema.Package) (namingCtx *modContext
 	namingCtx = mod
 	if pkg != nil && pkg != mod.pkg {
 		external = true
-		pkgName = pkg.Name + "."
+		pkgName = makeValidIdentifier(pkg.Name) + "."
 
 		var info NodePackageInfo
 		contract.AssertNoError(pkg.ImportLanguages(map[string]schema.Language{"nodejs": Importer}))
@@ -523,7 +523,7 @@ func (mod *modContext) genResource(w io.Writer, r *schema.Resource) error {
 		if mod.compatibility == kubernetes20 {
 			required = true
 		}
-		fmt.Fprintf(w, "    public %sreadonly %s!: pulumi.Output<%s>;\n", outcomment, prop.Name, makeValidIdentifier(mod.typeString(prop.Type, false, false, false, !required, prop.ConstValue)))
+		fmt.Fprintf(w, "    public %sreadonly %s!: pulumi.Output<%s>;\n", outcomment, prop.Name, mod.typeString(prop.Type, false, false, false, !required, prop.ConstValue))
 	}
 	fmt.Fprintf(w, "\n")
 
