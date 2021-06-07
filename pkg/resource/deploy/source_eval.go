@@ -303,7 +303,7 @@ func (d *defaultProviders) newRegisterDefaultProviderEvent(
 	event := &registerResourceEvent{
 		goal: resource.NewGoal(
 			providers.MakeProviderType(req.Package()),
-			req.Name(), true, inputs, "", false, nil, "", nil, nil, nil, nil, nil, nil, "", nil),
+			req.Name(), true, inputs, "", false, nil, "", nil, nil, nil, nil, nil, nil, "", nil, nil),
 		done: done,
 	}
 	return event, done, nil
@@ -848,6 +848,11 @@ func (rm *resmon) RegisterResource(ctx context.Context,
 		additionalSecretOutputs = append(additionalSecretOutputs, resource.PropertyKey(name))
 	}
 
+	var replaceOnChangeKeys []resource.PropertyKey
+	for _, name := range req.GetReplaceOnChangeKeys() {
+		replaceOnChangeKeys = append(replaceOnChangeKeys, resource.PropertyKey(name))
+	}
+
 	var timeouts resource.CustomTimeouts
 	if customTimeouts != nil {
 		if customTimeouts.Create != "" {
@@ -920,7 +925,7 @@ func (rm *resmon) RegisterResource(ctx context.Context,
 		step := &registerResourceEvent{
 			goal: resource.NewGoal(t, name, custom, props, parent, protect, dependencies,
 				providerRef.String(), nil, propertyDependencies, deleteBeforeReplace, ignoreChanges,
-				additionalSecretOutputs, aliases, id, &timeouts),
+				additionalSecretOutputs, aliases, id, &timeouts, replaceOnChangeKeys),
 			done: make(chan *RegisterResult),
 		}
 

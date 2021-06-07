@@ -107,6 +107,7 @@ func (sg *stepGenerator) GenerateReadSteps(event ReadResourceEvent) ([]Step, res
 		nil, /* aliases */
 		nil, /* customTimeouts */
 		"",  /* importID */
+		nil, /* replaceOnChangeKeys */
 	)
 	old, hasOld := sg.deployment.Olds()[urn]
 
@@ -248,7 +249,7 @@ func (sg *stepGenerator) generateSteps(event RegisterResourceEvent) ([]Step, res
 	// get serialized into the checkpoint file.
 	new := resource.NewState(goal.Type, urn, goal.Custom, false, "", inputs, nil, goal.Parent, goal.Protect, false,
 		goal.Dependencies, goal.InitErrors, goal.Provider, goal.PropertyDependencies, false,
-		goal.AdditionalSecretOutputs, goal.Aliases, &goal.CustomTimeouts, "")
+		goal.AdditionalSecretOutputs, goal.Aliases, &goal.CustomTimeouts, "", goal.ReplaceOnChangeKeys)
 
 	// Mark the URN/resource as having been seen. So we can run analyzers on all resources seen, as well as
 	// lookup providers for calculating replacement of resources that use the provider.
@@ -524,9 +525,14 @@ func (sg *stepGenerator) generateStepsFromDiff(
 			"unrecognized diff state for %s: %d", urn, diff.Changes)
 	}
 
-	// If there were changes, check for a replacement vs. an in-place update.
-	if diff.Changes == plugin.DiffSome {
-		if diff.Replace() {
+	// There are changes if the diff returned DiffSome or if there were initErrors previously that should
+	// force an update to occur even if no inputs changed.
+	needsUpdateOrReplace := diff.Changes == plugin.DiffSome || len(old.InitErrors) > 0
+
+	// If there were changes check for a replacement vs. an in-place update.
+	if needsUpdateOrReplace {
+		replaceKeys := sg.calculateReplaceKeys(old, new, diff)
+		if len(replaceKeys) > 0 {
 			// If the goal state specified an ID, issue an error: the replacement will change the ID, and is
 			// therefore incompatible with the goal state.
 			if goal.ID != "" {
@@ -557,8 +563,8 @@ func (sg *stepGenerator) generateStepsFromDiff(
 			}
 
 			if logging.V(7) {
-				logging.V(7).Infof("Planner decided to replace '%v' (oldprops=%v inputs=%v)",
-					urn, oldInputs, new.Inputs)
+				logging.V(7).Infof("Planner decided to replace '%v' (oldprops=%v inputs=%v replaceKeys=%v)",
+					urn, oldInputs, new.Inputs, replaceKeys)
 			}
 
 			// We have two approaches to performing replacements:
@@ -638,7 +644,7 @@ func (sg *stepGenerator) generateStepsFromDiff(
 		// If we fell through, it's an update.
 		sg.updates[urn] = true
 		if logging.V(7) {
-			logging.V(7).Infof("Planner decided to update '%v' (oldprops=%v inputs=%v", urn, oldInputs, new.Inputs)
+			logging.V(7).Infof("Planner decided to update '%v' (oldprops=%v inputs=%v)", urn, oldInputs, new.Inputs)
 		}
 		return []Step{
 			NewUpdateStep(sg.deployment, event, old, new, diff.StableKeys, diff.ChangedKeys, diff.DetailedDiff,
@@ -646,13 +652,7 @@ func (sg *stepGenerator) generateStepsFromDiff(
 		}, nil
 	}
 
-	// If resource was unchanged, but there were initialization errors, generate an empty update
-	// step to attempt to "continue" awaiting initialization.
-	if len(old.InitErrors) > 0 {
-		sg.updates[urn] = true
-		return []Step{NewUpdateStep(sg.deployment, event, old, new, diff.StableKeys, nil, nil, nil)}, nil
-	}
-
+	// Else there are no changes needed
 	return nil, nil
 }
 
@@ -1178,6 +1178,76 @@ func (sg *stepGenerator) getProviderResource(urn resource.URN, provider string) 
 	result := sg.providers[ref.URN()]
 	contract.Assertf(result != nil, "provider missing from step generator providers map")
 	return result
+}
+
+type replaceOnChangeSet struct {
+	m   map[resource.PropertyKey]bool
+	all bool
+}
+
+func newReplaceOnChangeSet(keys []resource.PropertyKey) *replaceOnChangeSet {
+	m := map[resource.PropertyKey]bool{}
+	all := false
+	for _, key := range keys {
+		if key == "*" {
+			all = true
+			continue
+		}
+		m[key] = true
+	}
+	return &replaceOnChangeSet{
+		m:   m,
+		all: all,
+	}
+}
+
+func (s *replaceOnChangeSet) Contains(key resource.PropertyKey) bool {
+	if s.all {
+		return true
+	}
+	if _, ok := s.m[key]; ok {
+		return true
+	}
+	return false
+}
+
+func (s *replaceOnChangeSet) All() bool {
+	return s.all
+}
+
+// calculateReplaceKeys determines the keys that would force a replacement. If there are any, a replacement
+// operation will be scheduled for the resource, else an update operation will be scheduled. The following
+// may cause a key to force a replacement:
+// * The detailed diff reports the key requires replacement
+// * The detailed diff reports the key requires update, but the key is marked as replace-on-change (or "*")
+// * The diff includes the key as a replace key
+// * The diff includes the key as a changed key, but the key is marked as replace-on-change (or "*")
+// * The old state had initErrors, and replace-on-change is "*" (a synthetic property is used to track)
+func (sg *stepGenerator) calculateReplaceKeys(
+	old, new *resource.State,
+	diff plugin.DiffResult) map[resource.PropertyKey]bool {
+
+	replaceOnChangeSet := newReplaceOnChangeSet(new.ReplaceOnChangeKeys)
+
+	replaceKeys := map[resource.PropertyKey]bool{}
+	for k, v := range diff.DetailedDiff {
+		p := resource.PropertyKey(k)
+		if v.Kind.IsReplace() || replaceOnChangeSet.Contains(p) {
+			replaceKeys[p] = true
+		}
+	}
+	for _, k := range diff.ReplaceKeys {
+		replaceKeys[k] = true
+	}
+	for _, k := range diff.ChangedKeys {
+		if replaceOnChangeSet.Contains(k) {
+			replaceKeys[k] = true
+		}
+	}
+	if len(old.InitErrors) > 0 && replaceOnChangeSet.All() {
+		replaceKeys[resource.PropertyKey("#initerror")] = true
+	}
+	return replaceKeys
 }
 
 type dependentReplace struct {
